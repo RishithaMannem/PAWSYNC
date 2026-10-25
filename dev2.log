@@ -1,0 +1,26 @@
+﻿npx.cmd : [33mThe CJS build of Vite's Node API is deprecated. See 
+https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+At line:1 char:158
++ ... $env:PATH"; & "C:\Program Files\nodejs\npx.cmd" vite --host 127.0.0.1 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([33mThe CJS bu...e details.[39m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m407[22m[2m[0m ms[22m
+
+  [32mΓ₧£[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m3000[22m/[39m
+<anonymous_script>:1
+∩╗┐{
+^
+
+[Failed to load PostCSS config: Failed to load PostCSS config (searchPath: C:/pawSync): [SyntaxError] Unexpected token 
+'∩╗┐', "∩╗┐{
+  "name"... is not valid JSON
+SyntaxError: Unexpected token '∩╗┐', "∩╗┐{
+  "name"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at jsonLoader (file:///C:/pawSync/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:25734:41)
+    at Object.search (file:///C:/pawSync/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:25895:25)]
+
+Node.js v24.22.1
