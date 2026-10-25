@@ -1,7 +1,6 @@
 ﻿import { useEffect, useState, type ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { LocateFixed, MapPin, X } from 'lucide-react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
 import Layout from './layouts/Layout';
 import Dashboard from './pages/Dashboard';
 import MyPets from './pages/MyPets';
@@ -18,7 +17,6 @@ import Community from './pages/Community';
 import Expenses from './pages/Expenses';
 import Settings from './pages/Settings';
 import { useApp } from './contexts/AppContext';
-import { auth, isFirebaseConfigured } from './lib/firebase';
 
 async function getCityFromCoordinates(latitude: number, longitude: number) {
   try {
@@ -154,64 +152,6 @@ function LocationSetupModal() {
 }
 
 function AuthGate({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const applySessionState = () => {
-    const guestMode = localStorage.getItem('pawsync_guest_mode') === 'true';
-
-    if (guestMode) {
-      setUser({ uid: 'guest-user', email: 'guest@pawsync.local', displayName: 'Guest User' } as User);
-      setLoading(false);
-      return;
-    }
-
-    if (!auth || !isFirebaseConfigured) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    onAuthStateChanged(auth, (nextUser) => {
-      setUser(nextUser);
-      setLoading(false);
-    });
-  };
-
-  useEffect(() => {
-    applySessionState();
-
-    const handleAuthChange = () => {
-      applySessionState();
-    };
-
-    window.addEventListener('storage', handleAuthChange);
-    window.addEventListener('pawsync-auth-change', handleAuthChange);
-
-    return () => {
-      window.removeEventListener('storage', handleAuthChange);
-      window.removeEventListener('pawsync-auth-change', handleAuthChange);
-    };
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="page">
-        <div className="card" style={{ maxWidth: '420px', margin: '4rem auto', textAlign: 'center' }}>
-          <p style={{ margin: 0, fontWeight: 700 }}>Loading PAWSYNC...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#eef1eb' }}>
-        <Settings />
-      </div>
-    );
-  }
-
   return <>{children}</>;
 }
 

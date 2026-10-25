@@ -9,16 +9,6 @@ import {
   Trash2,
   User,
 } from 'lucide-react';
-import {
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  type User as FirebaseUser,
-} from 'firebase/auth';
-
-import { auth, createUserProfile, isFirebaseConfigured } from '../lib/firebase';
-
 interface UserProfile {
   name: string;
   email: string;
@@ -31,7 +21,7 @@ interface UserProfile {
 const defaultProfile: UserProfile = {
   name: 'Pet Parent',
   email: 'petparent@demo.com',
-  loggedIn: false,
+  loggedIn: true,
   memberSince: '2024-01-10',
   notifications: true,
   locationSharing: true,
@@ -44,11 +34,9 @@ export default function Settings() {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
-  const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState('');
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
-  const RATE_LIMIT_WAIT_MS = 60000;
 
   useEffect(() => {
     const stored = localStorage.getItem('pawsync_profile');
@@ -62,37 +50,8 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
-    if (!isFirebaseConfigured) {
-      localStorage.removeItem('pawsync_profile');
-      setProfile((prev) => ({ ...prev, loggedIn: false }));
-      return;
-    }
-
     localStorage.setItem('pawsync_profile', JSON.stringify(profile));
   }, [profile]);
-
-  useEffect(() => {
-    if (!auth || !isFirebaseConfigured) {
-      setProfile({ ...defaultProfile, loggedIn: false });
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(auth, (user: FirebaseUser | null) => {
-      if (user) {
-        setProfile((prev) => ({
-          ...prev,
-          name: user.displayName || prev.name || 'Pet Parent',
-          email: user.email || prev.email,
-          loggedIn: true,
-        }));
-      } else {
-        localStorage.removeItem('pawsync_profile');
-        setProfile({ ...defaultProfile, loggedIn: false });
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     if (!cooldownUntil) {
@@ -121,16 +80,7 @@ export default function Settings() {
     setIsEditing(false);
   };
 
-  const handleLogout = async () => {
-    if (auth && isFirebaseConfigured) {
-      try {
-        await signOut(auth);
-      } catch (error: any) {
-        setStatusMessage(error?.message || 'Unable to sign out right now.');
-        return;
-      }
-    }
-
+  const handleLogout = () => {
     localStorage.removeItem('pawsync_profile');
     localStorage.removeItem('pawsync_guest_mode');
     window.dispatchEvent(new Event('pawsync-auth-change'));
@@ -151,84 +101,9 @@ export default function Settings() {
     setStatusMessage('You are now browsing as a guest.');
   };
 
-  const handleAuthSubmit = async () => {
-    const now = Date.now();
-    if (cooldownUntil && now < cooldownUntil) {
-      const remainingSeconds = Math.ceil((cooldownUntil - now) / 1000);
-      setCooldownSeconds(remainingSeconds);
-      setAuthError(`Too many attempts. Please wait ${remainingSeconds}s and try again.`);
-      setStatusMessage('');
-      return;
-    }
-
-    if (!auth || !isFirebaseConfigured) {
-      setAuthError('Add your Firebase credentials in the .env file to enable real multi-user authentication.');
-      setStatusMessage('');
-      return;
-    }
-
-    if (!emailInput.trim() || !passwordInput.trim()) {
-      setAuthError('Email and password are required.');
-      setStatusMessage('');
-      return;
-    }
-
-    setAuthBusy(true);
-    setAuthError('');
-    setStatusMessage('');
-
-    try {
-      if (authMode === 'signup') {
-        const credential = await createUserWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
-
-        await createUserProfile(credential.user.uid, {
-          email: credential.user.email,
-          fullName: credential.user.displayName || 'Pet Parent',
-        });
-
-        setEmailInput('');
-        setPasswordInput('');
-        setAuthMode('login');
-        setStatusMessage('Account created successfully. Please log in with your email and password.');
-      } else {
-        const credential = await signInWithEmailAndPassword(auth, emailInput.trim(), passwordInput);
-
-        setProfile((prev) => ({
-          ...prev,
-          name: prev.name || 'Pet Parent',
-          email: credential.user.email || emailInput.trim(),
-          loggedIn: true,
-        }));
-
-        setStatusMessage('Welcome back! You are now signed in.');
-        setEmailInput('');
-        setPasswordInput('');
-      }
-    } catch (error: any) {
-      const code = error?.code as string | undefined;
-      const message = error?.message as string | undefined;
-
-      if (code === 'auth/too-many-requests' || code === 'auth/network-request-failed') {
-        setCooldownUntil(Date.now() + RATE_LIMIT_WAIT_MS);
-        setCooldownSeconds(60);
-        setAuthError('Too many attempts. Please wait 60 seconds and try again.');
-        return;
-      }
-
-      if (code === 'auth/email-already-in-use') {
-        setAuthError('This email is already in use. Please log in instead.');
-        return;
-      }
-
-      if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') {
-        setAuthError('Invalid email or password. Please try again.');
-        return;
-      }
-
-      setAuthError(message || 'Authentication failed. Please try again.');
-    } finally {
-      setAuthBusy(false);
-    }
+  const handleAuthSubmit = () => {
+    setAuthError('Online account login is not enabled in this version.');
+    setStatusMessage('You can continue using all features as a guest.');
   };
 
   const handleAuthModeChange = (mode: 'login' | 'signup') => {
@@ -497,7 +372,7 @@ export default function Settings() {
               <button
                 type="button"
                 onClick={handleAuthSubmit}
-                disabled={authBusy || cooldownSeconds > 0}
+                disabled={cooldownSeconds > 0}
                 style={{
                   width: '100%',
                   border: 'none',
@@ -514,13 +389,11 @@ export default function Settings() {
                   opacity: cooldownSeconds > 0 ? 0.9 : 1
                 }}
               >
-                {authBusy
-                  ? 'Please wait...'
-                  : cooldownSeconds > 0
-                    ? `Please wait ${cooldownSeconds}s`
-                    : authMode === 'login'
-                      ? 'Login to PAWSYNC'
-                      : 'Create account'}
+                {cooldownSeconds > 0
+                  ? `Please wait ${cooldownSeconds}s`
+                  : authMode === 'login'
+                    ? 'Login to PAWSYNC'
+                    : 'Create account'}
               </button>
 
               <button
