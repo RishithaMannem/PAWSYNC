@@ -85,3 +85,5 @@ This app uses browser localStorage for data persistence. All data stays on your 
 - Not intended for production use with sensitive data
 - Health advice is general information, not veterinary diagnosis
 - Always consult a licensed veterinarian for medical decisions
+# PAWSYNC
+Everything related to pet
